@@ -1,11 +1,34 @@
+// .devcontainer/devcontainer.json
 {
     "name": "PHP",
     "image": "mcr.microsoft.com/devcontainers/php:8.2",
     "forwardPorts": [8000],
-    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y php8.2-cli curl && cp -r .devcontainer/workspace/. ~/ && curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && vim +PlugInstall +qall",
     "customizations": {
-        "vscode": {
-            "extensions": ["vscodevim.vim"]
-        }
-    }
-}
+      "vscode": {
+        "extensions": [
+          "vscodevim.vim"
+        ]
+      }
+    },
+    // This command runs after the container finishes building and the
+    // source code has been mounted at /workspaces/<repoName>
+    "postCreateCommand": [
+      // 1) Install vim (and anything else you need)
+      "sudo apt-get update && sudo apt-get install -y vim curl",
+  
+      // 2) Copy your dotfiles into ~ (the home directory).
+      //    Make sure the path is correct, especially if you store
+      //    .vimrc and .tmux.conf in .devcontainer/workspace/
+      "cp -r /workspaces/${containerWorkspaceFolderBasename}/.devcontainer/workspace/.* ~/",
+  
+      // 3) Download vim-plug
+      "curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim",
+  
+      // 4) Install plugins (this step will fail if you don’t have a .vimrc
+      //    or if it references plugins you don’t have a declaration for).
+      //    Also note that if you run as root, it might own your files incorrectly;
+      //    to ensure it’s run by ‘vscode’, you can wrap it in `su vscode -c '...'`
+      "su vscode -c 'vim +PlugInstall +qall'"
+    ]
+  }
+  
