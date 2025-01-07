@@ -26,7 +26,7 @@
             "onAutoForward": "notify"
         },
         "3306": {
-            "label": "MySQL Database",
+            "label": "MariaDB Database",
             "onAutoForward": "notify"
         }
     },
