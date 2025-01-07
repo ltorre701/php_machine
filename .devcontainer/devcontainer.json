@@ -1,35 +1,27 @@
 {
-    "name": "PHP with MySQL and phpMyAdmin",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": "."
-    },
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "streetsidesoftware.code-spell-checker",
-                "felixfbecker.php-debug",
-                "bmewburn.vscode-intelephense-client",
-                "ms-azuretools.vscode-docker",
-                "dbaeumer.vscode-eslint"
-            ],
-            "settings": {
-                "terminal.integrated.shell.linux": "/bin/bash",
-                "editor.formatOnSave": true
-            }
-        }
-    },
-    "forwardPorts": [80, 3306],
-    "portsAttributes": {
-        "80": {
-            "label": "Apache Server",
-            "onAutoForward": "notify"
-        },
-        "3306": {
-            "label": "MariaDB Database",
-            "onAutoForward": "notify"
-        }
-    },
-    "postCreateCommand": "echo 'Dev container setup complete!'",
-    "remoteUser": "codespace"
+  "name": "Ubuntu PHP 8.1 Devcontainer",
+  // Use the Dockerfile in the same folder
+  "dockerFile": "Dockerfile",
+
+  // Forward port 8080 (where Apache will listen)
+  "forwardPorts": [8080],
+
+  // This ensures the container user is "vscode" (commonly used in GitHub Codespaces).
+  "remoteUser": "vscode",
+
+  // Optional: Add any VS Code settings you want here
+  "settings": {
+    // For example, set the default shell to bash
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+
+  // (Optional) If you'd like to automatically install recommended extensions
+  // "extensions": [
+  //   "ms-azuretools.vscode-docker"
+  // ],
+
+  // You could mount a volumes or bind your code; normally you don't need to do anything special 
+  // for Codespaces, as it clones your repo into the container automatically.
+  //
+  // "mounts": []
 }
