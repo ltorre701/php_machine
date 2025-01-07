@@ -1,5 +1,5 @@
 {
-    "name": "PHP Ubuntu Dev Container",
+    "name": "PHP with MySQL and phpMyAdmin",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "."
@@ -7,6 +7,7 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                "streetsidesoftware.code-spell-checker",
                 "felixfbecker.php-debug",
                 "bmewburn.vscode-intelephense-client",
                 "ms-azuretools.vscode-docker",
@@ -18,7 +19,17 @@
             }
         }
     },
-    "forwardPorts": [80],
+    "forwardPorts": [80, 3306],
+    "portsAttributes": {
+        "80": {
+            "label": "Apache Server",
+            "onAutoForward": "notify"
+        },
+        "3306": {
+            "label": "MySQL Database",
+            "onAutoForward": "notify"
+        }
+    },
     "postCreateCommand": "echo 'Dev container setup complete!'",
     "remoteUser": "codespace"
 }
