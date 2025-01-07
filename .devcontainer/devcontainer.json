@@ -1,0 +1,24 @@
+{
+    "name": "PHP Ubuntu Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "felixfbecker.php-debug",
+                "bmewburn.vscode-intelephense-client",
+                "ms-azuretools.vscode-docker",
+                "dbaeumer.vscode-eslint"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "forwardPorts": [80],
+    "postCreateCommand": "echo 'Dev container setup complete!'",
+    "remoteUser": "codespace"
+}
