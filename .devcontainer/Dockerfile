@@ -1,29 +1,32 @@
-# Use the official Ubuntu 22.04 LTS as the base image
-FROM ubuntu:22.04
+# Use the pre-built PHP dev container image as the base
+FROM mcr.microsoft.com/devcontainers/php:1-8.3
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Update package lists and install prerequisites
 RUN apt-get update && \
-    apt-get install -y software-properties-common curl gnupg2 git vim tmux
-
-# Add the PHP repository and install PHP 8.1
-RUN add-apt-repository ppa:ondrej/php -y && \
-    apt-get update && \
     apt-get install -y \
-        php8.1 \
-        php8.1-cli \
-        php8.1-fpm \
-        php8.1-mysql \
-        php8.1-xml \
-        php8.1-curl
+        mysql-server \
+        phpmyadmin \
+        supervisor \
+        vim \
+        tmux \
+        git \
+        curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Apache2 and the PHP module for Apache
-RUN apt-get install -y apache2 libapache2-mod-php8.1
+# Configure MySQL
+RUN service mysql start && \
+    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';" && \
+    mysql -e "CREATE DATABASE IF NOT EXISTS your_database;" && \
+    mysql -e "CREATE USER 'your_user'@'localhost' IDENTIFIED BY 'your_password';" && \
+    mysql -e "GRANT ALL PRIVILEGES ON your_database.* TO 'your_user'@'localhost';" && \
+    mysql -e "FLUSH PRIVILEGES;"
 
-# Enable Apache modules
-RUN a2enmod rewrite
+# Configure phpMyAdmin
+RUN echo 'Include /etc/phpmyadmin/apache.conf' >> /etc/apache2/apache2.conf && \
+    sed -i 's/AllowNoPassword false/AllowNoPassword true/' /etc/phpmyadmin/config.inc.php
 
 # Install Vim-Plug for plugin management
 RUN curl -fLo /home/codespace/.vim/autoload/plug.vim --create-dirs \
@@ -41,11 +44,14 @@ WORKDIR /workspace
 COPY .vimrc /home/codespace/.vimrc
 COPY .tmux.conf /home/codespace/.tmux.conf
 
+# Copy supervisor configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Set ownership to the default user
 RUN chown codespace:codespace /home/codespace/.vimrc /home/codespace/.tmux.conf
 
 # Symlink the workspace to Apache's document root
-RUN ln -s /workspace /var/www/html
+RUN rm -rf /var/www/html && ln -s /workspace /var/www/html
 
 # Ensure the workspace and document root have the correct permissions
 RUN chown -R www-data:www-data /var/www/html && \
@@ -63,11 +69,8 @@ RUN ~/.tmux/plugins/tpm/bin/install_plugins
 # Switch back to root for the remaining setup
 USER root
 
-# Clean up to reduce image size
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Expose Apache's and MySQL's ports
+EXPOSE 80 3306
 
-# Expose Apache's port
-EXPOSE 80
-
-# Start Apache and keep the container running
-CMD ["bash", "-c", "service apache2 start && tail -f /dev/null"]
+# Start supervisor which manages Apache and MySQL
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
