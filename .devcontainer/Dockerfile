@@ -4,29 +4,37 @@ FROM mcr.microsoft.com/devcontainers/php:1-8.3
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update package lists and install prerequisites
-RUN apt-get update && \
-    apt-get install -y \
-        mysql-server \
-        phpmyadmin \
-        supervisor \
-        vim \
-        tmux \
-        git \
-        curl && \
+# Enable contrib and non-free in sources.list
+RUN sed -i '/deb http:\/\/deb.debian.org\/debian bookworm main/s/main/main contrib non-free/' /etc/apt/sources.list && \
+    sed -i '/deb http:\/\/deb.debian.org\/debian-security bookworm-security main/s/main/main contrib non-free/' /etc/apt/sources.list
+
+# Update package lists
+RUN apt-get update
+
+# Install required packages
+RUN apt-get install -y \
+    mariadb-server \
+    supervisor \
+    vim \
+    tmux \
+    git \
+    curl \
+    unzip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Configure MySQL
-RUN service mysql start && \
-    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';" && \
-    mysql -e "CREATE DATABASE IF NOT EXISTS your_database;" && \
-    mysql -e "CREATE USER 'your_user'@'localhost' IDENTIFIED BY 'your_password';" && \
-    mysql -e "GRANT ALL PRIVILEGES ON your_database.* TO 'your_user'@'localhost';" && \
-    mysql -e "FLUSH PRIVILEGES;"
+# Install phpMyAdmin manually
+RUN mkdir -p /usr/share/phpmyadmin && \
+    curl -Lo /tmp/phpmyadmin.zip https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip && \
+    unzip /tmp/phpmyadmin.zip -d /usr/share/phpmyadmin && \
+    rm /tmp/phpmyadmin.zip && \
+    mv /usr/share/phpmyadmin/phpMyAdmin-*-all-languages/* /usr/share/phpmyadmin/ && \
+    rmdir /usr/share/phpmyadmin/phpMyAdmin-*-all-languages
 
 # Configure phpMyAdmin
-RUN echo 'Include /etc/phpmyadmin/apache.conf' >> /etc/apache2/apache2.conf && \
-    sed -i 's/AllowNoPassword false/AllowNoPassword true/' /etc/phpmyadmin/config.inc.php
+RUN mkdir -p /var/www/html/phpmyadmin && \
+    ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin && \
+    cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php && \
+    sed -i "s/\$cfg\['blowfish_secret'\] = '';/\$cfg\['blowfish_secret'\] = 'a_random_blowfish_secret';/" /usr/share/phpmyadmin/config.inc.php
 
 # Install Vim-Plug for plugin management
 RUN curl -fLo /home/codespace/.vim/autoload/plug.vim --create-dirs \
@@ -69,8 +77,8 @@ RUN ~/.tmux/plugins/tpm/bin/install_plugins
 # Switch back to root for the remaining setup
 USER root
 
-# Expose Apache's and MySQL's ports
+# Expose Apache's and MariaDB's ports
 EXPOSE 80 3306
 
-# Start supervisor which manages Apache and MySQL
+# Start supervisor which manages Apache and MariaDB
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
